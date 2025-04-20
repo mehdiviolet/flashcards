@@ -1,14 +1,6 @@
 // src/App.jsx
 import { useState, useEffect } from "react";
-import {
-  ChevronRight,
-  ChevronLeft,
-  Check,
-  RotateCw,
-  Settings,
-  HelpCircle,
-  X,
-} from "lucide-react";
+import { Check, RotateCw, Settings, HelpCircle, X } from "lucide-react";
 import { initialWords, CATEGORIES } from "./data/words"; // Importa i dati dal file esterno
 
 function App() {
@@ -23,9 +15,7 @@ function App() {
 
   const [cards, setCards] = useState(loadCardsFromStorage);
   const [activeCards, setActiveCards] = useState([]);
-  const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
+  const [flippedCardIds, setFlippedCardIds] = useState({});
   const [showSettings, setShowSettings] = useState(false);
   const [activeCategory, setActiveCategory] = useState("all");
 
@@ -45,14 +35,8 @@ function App() {
     }
 
     setActiveCards(filteredCards);
-
-    if (filteredCards.length === 0) {
-      setIsCompleted(true);
-    } else {
-      setIsCompleted(false);
-      setCurrentCardIndex(0);
-      setIsFlipped(false);
-    }
+    // Resetta lo stato delle carte girate quando cambia la categoria
+    setFlippedCardIds({});
   }, [activeCategory, cards]);
 
   const getCategoryLabel = (category) => {
@@ -85,14 +69,32 @@ function App() {
     }
   };
 
-  const handleCardClick = () => {
-    setIsFlipped(!isFlipped);
+  const getCardBackgroundColor = (category) => {
+    switch (category) {
+      case CATEGORIES.CORRECT:
+        return "bg-green-50";
+      case CATEGORIES.REVIEW:
+        return "bg-yellow-50";
+      case CATEGORIES.WRONG:
+        return "bg-red-50";
+      default:
+        return "bg-white";
+    }
   };
 
-  const handleAnswer = (answerCategory) => {
-    // Aggiorna la categoria della carta corrente
+  const toggleCardFlip = (cardId) => {
+    setFlippedCardIds((prev) => ({
+      ...prev,
+      [cardId]: !prev[cardId],
+    }));
+  };
+
+  const handleAnswer = (cardId, answerCategory, e) => {
+    e.stopPropagation();
+
+    // Aggiorna la categoria della carta
     const updatedCards = cards.map((card) => {
-      if (card.id === activeCards[currentCardIndex].id) {
+      if (card.id === cardId) {
         return {
           ...card,
           category: answerCategory,
@@ -102,20 +104,6 @@ function App() {
     });
 
     setCards(updatedCards);
-
-    // Passa alla carta successiva o termina la sessione
-    if (currentCardIndex < activeCards.length - 1) {
-      setCurrentCardIndex(currentCardIndex + 1);
-      setIsFlipped(false);
-    } else {
-      setIsCompleted(true);
-    }
-  };
-
-  const resetSession = () => {
-    setCurrentCardIndex(0);
-    setIsFlipped(false);
-    setIsCompleted(false);
   };
 
   const addNewCard = (card) => {
@@ -143,7 +131,6 @@ function App() {
       }));
 
       setCards(resetedCards);
-      resetSession();
       setShowSettings(false);
     }
   };
@@ -317,37 +304,6 @@ function App() {
     );
   };
 
-  // Visualizzazione completata
-  const CompletedView = () => {
-    return (
-      <div className="bg-white rounded-lg shadow-md p-6 w-full max-w-md">
-        <h2 className="text-2xl font-bold text-center mb-4">
-          {activeCards.length > 0 ? "Completato!" : "Nessuna carta disponibile"}
-        </h2>
-
-        <div className="mb-6 text-center">
-          {activeCategory !== "all" ? (
-            <p>
-              Hai completato tutte le carte nella categoria
-              {getCategoryLabel(activeCategory)}.
-            </p>
-          ) : (
-            <p>Hai completato tutte le carte disponibili.</p>
-          )}
-        </div>
-
-        <div className="space-y-3">
-          <button
-            onClick={() => setShowSettings(true)}
-            className="w-full py-2 bg-blue-500 text-white rounded flex items-center justify-center font-medium hover:bg-blue-600"
-          >
-            <Settings className="mr-2 h-4 w-4" /> Impostazioni
-          </button>
-        </div>
-      </div>
-    );
-  };
-
   if (showSettings) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
@@ -356,28 +312,9 @@ function App() {
     );
   }
 
-  if (isCompleted) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-        <CompletedView />
-      </div>
-    );
-  }
-
-  // Controlla se ci sono carte attive prima di renderizzare una carta
-  if (activeCards.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-        <CompletedView />
-      </div>
-    );
-  }
-
-  const currentCard = activeCards[currentCardIndex];
-
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gray-100 p-4">
+      <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Flashcards Inglese</h1>
           <button
@@ -388,136 +325,129 @@ function App() {
           </button>
         </div>
 
-        <div className="mb-4 flex justify-between items-center">
-          <p>
-            Carta {currentCardIndex + 1} di {activeCards.length}
-          </p>
-          {activeCategory !== "all" && (
+        {activeCategory !== "all" && (
+          <div className="mb-4">
             <div
-              className={`px-2 py-1 rounded-full text-xs ${getCategoryColor(
+              className={`inline-block px-3 py-1 rounded-full text-sm ${getCategoryColor(
                 activeCategory
               )}`}
             >
-              {getCategoryLabel(activeCategory)}
+              Categoria: {getCategoryLabel(activeCategory)}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
-        <div
-          className="relative w-full h-64 cursor-pointer mb-4"
-          onClick={handleCardClick}
-          style={{ perspective: "1000px" }}
-        >
-          {/* Front of card */}
-          <div
-            className={`absolute w-full h-full bg-white rounded-lg shadow-md p-6 flex flex-col items-center justify-center transition-all duration-500 ${
-              isFlipped ? "opacity-0" : "opacity-100"
-            }`}
-            style={{
-              backfaceVisibility: "hidden",
-              transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
-            }}
-          >
-            <h2 className="text-3xl font-bold mb-2">{currentCard.word}</h2>
-            {currentCard.type && (
-              <p className="text-gray-500 italic">{currentCard.type}</p>
-            )}
-            <p className="mt-6 text-gray-600">
-              Tocca per vedere il significato
+        {activeCards.length === 0 ? (
+          <div className="bg-white rounded-lg shadow-md p-6 text-center">
+            <h2 className="text-xl font-bold mb-4">
+              Nessuna carta disponibile
+            </h2>
+            <p>
+              Non ci sono carte da visualizzare nella categoria selezionata.
             </p>
-
-            {currentCard.category !== CATEGORIES.NEW && (
-              <div className="absolute bottom-2 right-3 text-xs">
+            <button
+              onClick={() => setShowSettings(true)}
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+            >
+              Impostazioni
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {activeCards.map((card) => (
+              <div
+                key={card.id}
+                className={`relative cursor-pointer h-64 rounded-lg shadow-md ${getCardBackgroundColor(
+                  card.category
+                )}`}
+                onClick={() => toggleCardFlip(card.id)}
+                style={{ perspective: "1000px" }}
+              >
+                {/* Front of card */}
                 <div
-                  className={`px-2 py-1 rounded-full ${getCategoryColor(
-                    currentCard.category
-                  )}`}
+                  className={`absolute w-full h-full rounded-lg p-4 flex flex-col items-center justify-center transition-all duration-500 ${
+                    flippedCardIds[card.id] ? "opacity-0" : "opacity-100"
+                  }`}
+                  style={{
+                    backfaceVisibility: "hidden",
+                    transform: flippedCardIds[card.id]
+                      ? "rotateY(180deg)"
+                      : "rotateY(0deg)",
+                  }}
                 >
-                  {getCategoryLabel(currentCard.category)}
+                  <h2 className="text-xl font-bold mb-2 text-center">
+                    {card.word}
+                  </h2>
+                  {card.type && (
+                    <p className="text-gray-500 italic text-center">
+                      {card.type}
+                    </p>
+                  )}
+                  <p className="mt-6 text-gray-600 text-sm text-center">
+                    Tocca per vedere il significato
+                  </p>
+
+                  {card.category !== CATEGORIES.NEW && (
+                    <div className="absolute bottom-2 right-3 text-xs">
+                      <div
+                        className={`px-2 py-1 rounded-full ${getCategoryColor(
+                          card.category
+                        )}`}
+                      >
+                        {getCategoryLabel(card.category)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Back of card */}
+                <div
+                  className={`absolute w-full h-full rounded-lg p-4 flex flex-col items-center justify-center transition-all duration-500 ${
+                    flippedCardIds[card.id] ? "opacity-100" : "opacity-0"
+                  } ${card.category === CATEGORIES.NEW ? "bg-blue-50" : ""}`}
+                  style={{
+                    backfaceVisibility: "hidden",
+                    transform: flippedCardIds[card.id]
+                      ? "rotateY(0deg)"
+                      : "rotateY(-180deg)",
+                  }}
+                >
+                  <p className="text-sm font-medium mb-2">Significato:</p>
+                  <h2 className="text-lg font-bold mb-4 text-center">
+                    {card.meaning}
+                  </h2>
+
+                  <div className="mt-2 grid grid-cols-3 gap-1 w-full">
+                    <button
+                      onClick={(e) =>
+                        handleAnswer(card.id, CATEGORIES.CORRECT, e)
+                      }
+                      className="py-1 px-1 bg-green-500 text-white text-xs rounded flex items-center justify-center hover:bg-green-600"
+                    >
+                      <Check className="mr-1 h-3 w-3" /> Fatta
+                    </button>
+                    <button
+                      onClick={(e) =>
+                        handleAnswer(card.id, CATEGORIES.REVIEW, e)
+                      }
+                      className="py-1 px-1 bg-yellow-500 text-white text-xs rounded flex items-center justify-center hover:bg-yellow-600"
+                    >
+                      <HelpCircle className="mr-1 h-3 w-3" /> Dubbio
+                    </button>
+                    <button
+                      onClick={(e) =>
+                        handleAnswer(card.id, CATEGORIES.WRONG, e)
+                      }
+                      className="py-1 px-1 bg-red-500 text-white text-xs rounded flex items-center justify-center hover:bg-red-600"
+                    >
+                      <X className="mr-1 h-3 w-3" /> sbagliata{" "}
+                    </button>
+                  </div>
                 </div>
               </div>
-            )}
+            ))}
           </div>
-
-          {/* Back of card */}
-          <div
-            className={`absolute w-full h-full bg-blue-50 rounded-lg shadow-md p-6 flex flex-col items-center justify-center transition-all duration-500 ${
-              isFlipped ? "opacity-100" : "opacity-0"
-            }`}
-            style={{
-              backfaceVisibility: "hidden",
-              transform: isFlipped ? "rotateY(0deg)" : "rotateY(-180deg)",
-            }}
-          >
-            <p className="text-lg font-medium mb-2">Significato:</p>
-            <h2 className="text-2xl font-bold mb-6">{currentCard.meaning}</h2>
-
-            <div className="mt-4 grid grid-cols-3 gap-2 w-full">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAnswer(CATEGORIES.CORRECT);
-                }}
-                className="py-2 bg-green-500 text-white rounded flex items-center justify-center hover:bg-green-600"
-              >
-                <Check className="mr-1 h-4 w-4" /> Fatta
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAnswer(CATEGORIES.REVIEW);
-                }}
-                className="py-2 bg-yellow-500 text-white rounded flex items-center justify-center hover:bg-yellow-600"
-              >
-                <HelpCircle className="mr-1 h-4 w-4" /> Dubbio
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAnswer(CATEGORIES.WRONG);
-                }}
-                className="py-2 bg-red-500 text-white rounded flex items-center justify-center hover:bg-red-600"
-              >
-                <X className="mr-1 h-4 w-4" /> Sbagliata
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex justify-between w-full mt-6">
-          <button
-            onClick={() => {
-              if (currentCardIndex > 0) {
-                setCurrentCardIndex(currentCardIndex - 1);
-                setIsFlipped(false);
-              }
-            }}
-            disabled={currentCardIndex === 0}
-            className={`flex items-center ${
-              currentCardIndex === 0
-                ? "text-gray-300 cursor-not-allowed"
-                : "text-blue-500 hover:text-blue-700"
-            }`}
-          >
-            <ChevronLeft className="h-5 w-5" /> Precedente
-          </button>
-          <button
-            onClick={() => {
-              if (currentCardIndex < activeCards.length - 1) {
-                setCurrentCardIndex(currentCardIndex + 1);
-                setIsFlipped(false);
-              }
-            }}
-            disabled={currentCardIndex === activeCards.length - 1}
-            className={`flex items-center ${
-              currentCardIndex === activeCards.length - 1
-                ? "text-gray-300 cursor-not-allowed"
-                : "text-blue-500 hover:text-blue-700"
-            }`}
-          >
-            Successiva <ChevronRight className="h-5 w-5" />
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );
