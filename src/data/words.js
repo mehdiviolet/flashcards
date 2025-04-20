@@ -1511,6 +1511,20 @@ export const initialWords = [
     meaning: "having a fever,higher than normal body temperature",
     category: "new",
   },
+  {
+    id: 216,
+    word: "presidential suite",
+    type: "phrase",
+    meaning: "the most luxurious room in a hotel",
+    category: "new",
+  },
+  {
+    id: 217,
+    word: "take a look at",
+    type: "phrase",
+    meaning: "to examine or inspect something",
+    category: "new",
+  },
 ];
 
 // Puoi anche esportare categorie per mantenerle coerenti
