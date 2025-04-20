@@ -1476,6 +1476,41 @@ export const initialWords = [
     meaning: "holiday taken by a newly married couple",
     category: "new",
   },
+  {
+    id: 211,
+    word: "coke and fries",
+    type: "phrase",
+    meaning: "an order of Coca-Cola and french fries",
+    category: "new",
+  },
+  {
+    id: 212,
+    word: "either...or",
+    type: "phrase",
+    meaning: "presenting a choice between two options",
+    category: "new",
+  },
+  {
+    id: 213,
+    word: "across the street",
+    type: "phrase",
+    meaning: "on the other side of the street",
+    category: "new",
+  },
+  {
+    id: 214,
+    word: "sore throat",
+    type: "phrase",
+    meaning: "a painful or irritated throat",
+    category: "new",
+  },
+  {
+    id: 215,
+    word: "feverish",
+    type: "adjective",
+    meaning: "having a fever, higher than normal body temperature",
+    category: "new",
+  },
 ];
 
 // Puoi anche esportare categorie per mantenerle coerenti
