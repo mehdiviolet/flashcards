@@ -440,7 +440,7 @@ function App() {
                       }
                       className="py-1 px-1 bg-red-500 text-white text-xs rounded flex items-center justify-center hover:bg-red-600"
                     >
-                      <X className="mr-1 h-3 w-3" /> Sbagliata
+                      <X className="mr-1 h-3 w-3" /> sbagliata{" "}
                     </button>
                   </div>
                 </div>
