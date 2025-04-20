@@ -1508,7 +1508,7 @@ export const initialWords = [
     id: 215,
     word: "feverish",
     type: "adjective",
-    meaning: "having a fever, higher than normal body temperature",
+    meaning: "having a fever,higher than normal body temperature",
     category: "new",
   },
 ];
