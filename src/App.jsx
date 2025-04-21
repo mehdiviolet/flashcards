@@ -1,6 +1,14 @@
 // src/App.jsx
 import { useState, useEffect } from "react";
-import { Check, RotateCw, Settings, HelpCircle, X } from "lucide-react";
+import {
+  Check,
+  RotateCw,
+  Settings,
+  HelpCircle,
+  X,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { initialWords, CATEGORIES } from "./data/words"; // Importa i dati dal file esterno
 
 function App() {
@@ -16,6 +24,12 @@ function App() {
   const [cards, setCards] = useState(loadCardsFromStorage);
   const [flippedCardIds, setFlippedCardIds] = useState({});
   const [showSettings, setShowSettings] = useState(false);
+  const [collapsedColumns, setCollapsedColumns] = useState({
+    new: false,
+    review: false,
+    correct: false,
+    wrong: false,
+  });
 
   // Salva le carte nel localStorage quando cambiano
   useEffect(() => {
@@ -24,12 +38,10 @@ function App() {
 
   // Raggruppa le carte per categoria
   const cardsByCategory = {
-    all: cards.filter(
-      (card) =>
-        card.category === CATEGORIES.NEW || card.category === CATEGORIES.WRONG
-    ),
+    new: cards.filter((card) => card.category === CATEGORIES.NEW),
     review: cards.filter((card) => card.category === CATEGORIES.REVIEW),
     correct: cards.filter((card) => card.category === CATEGORIES.CORRECT),
+    wrong: cards.filter((card) => card.category === CATEGORIES.WRONG),
   };
 
   const toggleCardFlip = (cardId) => {
@@ -54,6 +66,13 @@ function App() {
     });
 
     setCards(updatedCards);
+  };
+
+  const toggleColumnCollapse = (columnKey) => {
+    setCollapsedColumns((prev) => ({
+      ...prev,
+      [columnKey]: !prev[columnKey],
+    }));
   };
 
   const getCategoryLabel = (category) => {
@@ -101,11 +120,14 @@ function App() {
 
   const getColumnHeaderColor = (column) => {
     switch (column) {
+      case "new":
+        return "bg-blue-100 border-blue-300";
       case "correct":
         return "bg-green-100 border-green-300";
       case "review":
         return "bg-yellow-100 border-yellow-300";
-      case "all":
+      case "wrong":
+        return "bg-red-100 border-red-300";
       default:
         return "bg-blue-100 border-blue-300";
     }
@@ -206,17 +228,10 @@ function App() {
   // Visualizzazione delle statistiche e gestione
   const SettingsView = () => {
     const categoryCounts = {
-      [CATEGORIES.NEW]: cards.filter((card) => card.category === CATEGORIES.NEW)
-        .length,
-      [CATEGORIES.CORRECT]: cards.filter(
-        (card) => card.category === CATEGORIES.CORRECT
-      ).length,
-      [CATEGORIES.REVIEW]: cards.filter(
-        (card) => card.category === CATEGORIES.REVIEW
-      ).length,
-      [CATEGORIES.WRONG]: cards.filter(
-        (card) => card.category === CATEGORIES.WRONG
-      ).length,
+      [CATEGORIES.NEW]: cardsByCategory.new.length,
+      [CATEGORIES.CORRECT]: cardsByCategory.correct.length,
+      [CATEGORIES.REVIEW]: cardsByCategory.review.length,
+      [CATEGORIES.WRONG]: cardsByCategory.wrong.length,
     };
 
     const totalCards = cards.length;
@@ -355,6 +370,45 @@ function App() {
     );
   };
 
+  // Componente per renderizzare una colonna
+  const CategoryColumn = ({ title, cards, columnKey }) => {
+    const isCollapsed = collapsedColumns[columnKey];
+    const headerColor = getColumnHeaderColor(columnKey);
+
+    return (
+      <div className="bg-white rounded-lg shadow-md">
+        <div
+          className={`p-3 rounded-t-lg font-semibold ${headerColor} border-b flex justify-between items-center cursor-pointer`}
+          onClick={() => toggleColumnCollapse(columnKey)}
+        >
+          <span>
+            {title} ({cards.length})
+          </span>
+          {isCollapsed ? (
+            <ChevronDown className="h-4 w-4" />
+          ) : (
+            <ChevronUp className="h-4 w-4" />
+          )}
+        </div>
+        {!isCollapsed && (
+          <div className="p-4">
+            {cards.length === 0 ? (
+              <p className="text-center text-gray-500 py-4">
+                Nessuna carta in questa categoria
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {cards.map((card) => (
+                  <FlashCard key={card.id} card={card} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   if (showSettings) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4">
@@ -379,78 +433,34 @@ function App() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Colonna 1: Nuove e Sbagliate */}
-          <div className="bg-white rounded-lg shadow-md">
-            <div
-              className={`p-3 rounded-t-lg font-semibold ${getColumnHeaderColor(
-                "all"
-              )} border-b`}
-            >
-              Da Studiare ({cardsByCategory.all.length})
-            </div>
-            <div className="p-4">
-              {cardsByCategory.all.length === 0 ? (
-                <p className="text-center text-gray-500 py-4">
-                  Nessuna carta da studiare
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {cardsByCategory.all.map((card) => (
-                    <FlashCard key={card.id} card={card} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Colonna 1: Nuove */}
+          <CategoryColumn
+            title="Da Leggere"
+            cards={cardsByCategory.new}
+            columnKey="new"
+          />
 
           {/* Colonna 2: Da rivedere */}
-          <div className="bg-white rounded-lg shadow-md">
-            <div
-              className={`p-3 rounded-t-lg font-semibold ${getColumnHeaderColor(
-                "review"
-              )} border-b`}
-            >
-              Da Rivedere ({cardsByCategory.review.length})
-            </div>
-            <div className="p-4">
-              {cardsByCategory.review.length === 0 ? (
-                <p className="text-center text-gray-500 py-4">
-                  Nessuna carta da rivedere
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {cardsByCategory.review.map((card) => (
-                    <FlashCard key={card.id} card={card} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          <CategoryColumn
+            title="Da Rivedere"
+            cards={cardsByCategory.review}
+            columnKey="review"
+          />
 
-          {/* Colonna 3: Fatte */}
-          <div className="bg-white rounded-lg shadow-md">
-            <div
-              className={`p-3 rounded-t-lg font-semibold ${getColumnHeaderColor(
-                "correct"
-              )} border-b`}
-            >
-              Completate ({cardsByCategory.correct.length})
-            </div>
-            <div className="p-4">
-              {cardsByCategory.correct.length === 0 ? (
-                <p className="text-center text-gray-500 py-4">
-                  Nessuna carta completata
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {cardsByCategory.correct.map((card) => (
-                    <FlashCard key={card.id} card={card} />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          {/* Colonna 3: Sbagliate */}
+          <CategoryColumn
+            title="Sbagliate"
+            cards={cardsByCategory.wrong}
+            columnKey="wrong"
+          />
+
+          {/* Colonna 4: Corrette */}
+          <CategoryColumn
+            title="Completate"
+            cards={cardsByCategory.correct}
+            columnKey="correct"
+          />
         </div>
       </div>
     </div>
